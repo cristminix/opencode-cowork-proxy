@@ -158,18 +158,11 @@ You can also configure Claude with a `claude.json` gateway entry. Replace the Wo
 }
 ```
 
-## Deploy
+## Deploy On Cloudflare
 
-Click the deploy button above, or deploy manually:
+This project is intended to run as a Cloudflare Worker. Deploy it to Cloudflare using either the deploy button above or Cloudflare's Git-based Worker deployment flow.
 
-```bash
-git clone https://github.com/chillibot-chillital/opencode-cowork-proxy
-cd opencode-cowork-proxy
-npm install
-npm run deploy
-```
-
-If you connect this repo to Cloudflare Git deployments:
+Use these settings when connecting the repository in Cloudflare:
 
 | Setting | Value |
 |---------|-------|
@@ -177,7 +170,7 @@ If you connect this repo to Cloudflare Git deployments:
 | Deploy command | `npm run deploy` |
 | Production branch | `main` |
 
-`wrangler deploy` performs the Worker build from `wrangler.toml`.
+Do not deploy this as a normal Node.js web app. `wrangler deploy` builds and publishes the Worker from `wrangler.toml`.
 
 ## Configuration
 
