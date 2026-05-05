@@ -1,10 +1,25 @@
 # OpenCode Cowork Proxy Worker
 
-[![Deploy to Cloudflare Workers](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/chillibot-chillital/opencode-cowork-proxy)
+[![Deploy to Cloudflare Workers](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/cucoleadan/opencode-cowork-proxy)
 
 This project lets Claude use OpenCode Go models, and some OpenCode Zen models.
 
 Claude normally speaks the Anthropic API format. OpenCode Go mostly speaks OpenAI-compatible API format. This small Cloudflare Worker sits in the middle and translates between them.
+
+## Set Up In Claude
+
+If you want the fastest working setup, use `minimax-m2.5-free` as the first model.
+
+1. Deploy this Worker to Cloudflare.
+2. Copy your deployed Worker URL.
+3. In Claude, open **Configure third-party Inference**.
+4. Choose the gateway / third-party inference option.
+5. Set the base URL to `YOUR_DEPLOYED_WORKER_URL/zen`.
+6. Set the auth scheme to `x-api-key`.
+7. Paste your OpenCode API key.
+8. Add `minimax-m2.5-free` as the model name.
+
+Important: do not add `/v1/messages` to the URL. Claude adds that path automatically.
 
 ## Quick Claude Configuration
 
@@ -13,12 +28,12 @@ Use these values in Claude's **Configure third-party Inference** screen:
 | Setting | Value |
 |---------|-------|
 | Provider | Gateway / third-party inference gateway |
-| Base URL | Your deployed Worker URL, or add `/go` or `/zen` |
+| Base URL | `YOUR_DEPLOYED_WORKER_URL/zen` |
 | Auth scheme | `x-api-key` |
-| API key | Your OpenCode Go API key |
-| Models | Add manually, for example `deepseek-v4-pro` |
+| API key | Your OpenCode API key |
+| Models | Add manually, for example `minimax-m2.5-free` |
 
-Important: use the Worker root URL only, optionally ending in `/go` or `/zen`. Do not add `/v1/messages` yourself. Claude adds the API path automatically.
+For the default example above, use `/zen` because `minimax-m2.5-free` is a Zen model. Use `/go` for OpenCode Go models instead. Do not add `/v1/messages` yourself. Claude adds the API path automatically.
 
 ## What This Does
 
