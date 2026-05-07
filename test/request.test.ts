@@ -188,6 +188,74 @@ describe('formatAnthropicToOpenAI (Anthropic → OpenAI request)', () => {
       { type: 'function', function: { name: 'get_weather', description: 'Get weather', parameters: { type: 'object', properties: { city: { type: 'string' } } } } },
     ]);
   });
+
+  it('converts base64 images from Anthropic to OpenAI image_url format', () => {
+    const result = formatAnthropicToOpenAI({
+      model: 'claude-sonnet-4-20250514',
+      messages: [{
+        role: 'user',
+        content: [
+          { type: 'text', text: 'What is in this image?' },
+          { type: 'image', source: { type: 'base64', media_type: 'image/png', data: 'abc123' } },
+        ],
+      }],
+      max_tokens: 1024,
+    });
+    expect(result.messages[0].role).toBe('user');
+    expect(Array.isArray(result.messages[0].content)).toBe(true);
+    expect(result.messages[0].content).toEqual([
+      { type: 'text', text: 'What is in this image?' },
+      { type: 'image_url', image_url: { url: 'data:image/png;base64,abc123' } },
+    ]);
+  });
+
+  it('converts URL images from Anthropic to OpenAI image_url format', () => {
+    const result = formatAnthropicToOpenAI({
+      model: 'claude-sonnet-4-20250514',
+      messages: [{
+        role: 'user',
+        content: [
+          { type: 'image', source: { type: 'url', url: 'https://example.com/cat.jpg' } },
+        ],
+      }],
+      max_tokens: 1024,
+    });
+    expect(result.messages[0].content).toEqual([
+      { type: 'image_url', image_url: { url: 'https://example.com/cat.jpg' } },
+    ]);
+  });
+
+  it('returns string content when user message has no images', () => {
+    const result = formatAnthropicToOpenAI({
+      model: 'claude-sonnet-4-20250514',
+      messages: [{
+        role: 'user',
+        content: [
+          { type: 'text', text: 'Hello world' },
+        ],
+      }],
+      max_tokens: 1024,
+    });
+    expect(result.messages[0].content).toBe('Hello world');
+  });
+
+  it('includes text alongside images in array content', () => {
+    const result = formatAnthropicToOpenAI({
+      model: 'claude-sonnet-4-20250514',
+      messages: [{
+        role: 'user',
+        content: [
+          { type: 'text', text: 'What is this?' },
+          { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: 'xyz' } },
+        ],
+      }],
+      max_tokens: 1024,
+    });
+    expect(result.messages[0].content).toEqual([
+      { type: 'text', text: 'What is this?' },
+      { type: 'image_url', image_url: { url: 'data:image/jpeg;base64,xyz' } },
+    ]);
+  });
 });
 
 describe('formatOpenAIToAnthropic (OpenAI → Anthropic request)', () => {
