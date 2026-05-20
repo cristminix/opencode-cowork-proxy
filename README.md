@@ -258,6 +258,32 @@ Prefix routes:
 | `/go` | `https://opencode.ai/zen/go/v1` |
 | `/zen` | `https://opencode.ai/zen/v1` |
 
+### Model Name Override
+
+Claude Desktop may reject model names that don't look like Anthropic models (e.g. `claude-sonnet-4-5` or `anthropic/claude-*`). To work around this, embed the real model name in the URL path after the prefix:
+
+```
+YOUR_DEPLOYED_WORKER_URL/go/minimax-m2.5-free
+YOUR_DEPLOYED_WORKER_URL/zen/minimax-m2.5-free
+```
+
+Claude appends `/v1/messages`, so the full request becomes `YOUR_WORKER_URL/zen/minimax-m2.5-free/v1/messages`. The proxy extracts the model from the path and uses it regardless of what Claude sends in the request body.
+
+**Usage:**
+1. Configure Claude with any Anthropic-looking model name (e.g. `claude-sonnet-4-5-20250514`) — this passes Claude's client-side validation.
+2. Set the base URL to `YOUR_WORKER_URL/zen/REAL_MODEL_ID` (replace `REAL_MODEL_ID` with the actual OpenCode model).
+3. The proxy silently maps the model for the upstream request.
+4. The response uses the original model name you configured, so Claude sees consistency.
+
+| Setting | Value |
+|---------|-------|
+| Base URL | `YOUR_WORKER_URL/zen/minimax-m2.5-free` |
+| Auth scheme | `x-api-key` |
+| API key | Your OpenCode API key |
+| Model | `claude-sonnet-4-5-20250514` (any Anthropic-looking name) |
+
+This works with all Go and Zen models.
+
 ## API Endpoints
 
 | Path | Method | Purpose |

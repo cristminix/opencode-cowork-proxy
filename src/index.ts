@@ -12,10 +12,13 @@ const ZEN_UPSTREAM = "https://opencode.ai/zen/v1";
 const DEFAULT_UPSTREAM = GO_UPSTREAM;
 const VISION_MODEL = "qwen3.5-plus";
 
-interface RouteConfig {
+const API_START_PATHS = new Set(['v1', 'v2']);
+
+type RouteConfig = {
   path: string;
   upstream: string;
-}
+  modelOverride: string | null;
+};
 
 function stripPrefix(path: string, prefix: string): string | null {
   if (path === prefix) return "/";
@@ -23,15 +26,30 @@ function stripPrefix(path: string, prefix: string): string | null {
   return null;
 }
 
+function extractModelSegment(path: string): { path: string; model: string | null } {
+  const segments = path.replace(/^\/+/, '').split('/');
+  if (segments.length > 0 && segments[0] && !API_START_PATHS.has(segments[0])) {
+    return { path: '/' + segments.slice(1).join('/'), model: segments[0] };
+  }
+  return { path, model: null };
+}
+
 function routeConfig(request: Request): RouteConfig {
   const path = new URL(request.url).pathname;
   const goPath = stripPrefix(path, "/go");
-  if (goPath) return { path: goPath, upstream: GO_UPSTREAM };
+  if (goPath) {
+    const { path: remaining, model } = extractModelSegment(goPath);
+    return { path: remaining, upstream: GO_UPSTREAM, modelOverride: model };
+  }
 
   const zenPath = stripPrefix(path, "/zen");
-  if (zenPath) return { path: zenPath, upstream: ZEN_UPSTREAM };
+  if (zenPath) {
+    const { path: remaining, model } = extractModelSegment(zenPath);
+    return { path: remaining, upstream: ZEN_UPSTREAM, modelOverride: model };
+  }
 
-  return { path, upstream: DEFAULT_UPSTREAM };
+  const { path: remaining, model } = extractModelSegment(path);
+  return { path: remaining, upstream: DEFAULT_UPSTREAM, modelOverride: model };
 }
 
 function getUpstream(request: Request, routeUpstream: string): string {
@@ -84,6 +102,8 @@ async function handleRequest(request: Request): Promise<Response> {
 
       if (fmt === "openai") {
         const req = await request.json();
+        const originalModel = req.model;
+        if (route.modelOverride) req.model = route.modelOverride;
         if (hasImages(req)) req.model = VISION_MODEL;
         const openaiReq = formatAnthropicToOpenAI(req);
         const res = await fetch(`${upstream}/chat/completions`, {
@@ -97,12 +117,12 @@ async function handleRequest(request: Request): Promise<Response> {
         if (!res.ok) return upstreamErrorResponse(res, await res.text());
 
         if (openaiReq.stream) {
-          return new Response(streamOpenAIToAnthropic(res.body as ReadableStream, openaiReq.model), {
+          return new Response(streamOpenAIToAnthropic(res.body as ReadableStream, originalModel), {
             headers: { "Content-Type": "text/event-stream", "Cache-Control": "no-cache", "Connection": "keep-alive" },
           });
         }
         const data: any = await res.json();
-        return new Response(JSON.stringify(toAnthropicResponse(data, openaiReq.model)), {
+        return new Response(JSON.stringify(toAnthropicResponse(data, originalModel)), {
           headers: { "Content-Type": "application/json" },
         });
       }
