@@ -10,9 +10,14 @@ I covered how to set this up in Claude in [How to Use Claude Code for Free with 
 
 ### Image / Vision Support
 
-When you attach an image in Claude Code and send it through this proxy, the request is automatically routed to **Qwen3.5 Plus** (`qwen3.5-plus`) — a vision-capable model on OpenCode Go. This happens transparently: the proxy detects image blocks in your request, translates them to OpenAI's image format, and overrides the model to Qwen3.5 Plus so the model can actually see the image.
+When you attach an image in Claude Code and send it through this proxy, the request is automatically routed to a vision-capable model. The model is selected based on which upstream the request is sent to:
 
-No configuration needed — it just works as long as you have an OpenCode Go subscription.
+| Upstream path | Vision model | Model ID |
+|---------------|--------------|----------|
+| `/go` (or no prefix, default) | MiniMax M3 | `minimax-m3` |
+| `/zen` | MiniMax M3 Free | `minimax-m3-free` |
+
+The proxy detects image blocks in your request, translates them to OpenAI's image format, and overrides the model so it can actually see the image. No configuration needed — it just works as long as you have an OpenCode Go or Zen subscription.
 
 ## Free Models
 
@@ -22,15 +27,14 @@ We support a pay-as-you-go model. Below are the prices per 1M tokens for complet
 |-------|----------|-------|--------|-------------|
 | Big Pickle | `big-pickle` | Free | Free | Free |
 | DeepSeek V4 Flash Free | `deepseek-v4-flash-free` | Free | Free | Free |
-| MiniMax M2.5 Free | `minimax-m2.5-free` | Free | Free | Free |
-| Ring 2.6 1T Free | `ring-2.6-1t-free` | Free | Free | Free |
+| MiMo-V2.5 Free | `mimo-v2.5-free` | Free | Free | Free |
 | Nemotron 3 Super Free | `nemotron-3-super-free` | Free | Free | Free |
 
 These models are available at `https://opencode.ai/zen/v1/chat/completions` via the `/zen` prefix. For the full model list and latest pricing, see the [OpenCode Zen endpoint docs](https://opencode.ai/docs/zen/#endpoints).
 
 ## Set Up In Claude
 
-If you want the fastest working setup, use `minimax-m2.5-free` as the first model.
+If you want the fastest working setup, use `mimo-v2.5-free` as the first model.
 
 1. Deploy this Worker to Cloudflare.
 2. Copy your deployed Worker URL.
@@ -39,7 +43,7 @@ If you want the fastest working setup, use `minimax-m2.5-free` as the first mode
 5. Set the base URL to `YOUR_DEPLOYED_WORKER_URL/zen`.
 6. Set the auth scheme to `x-api-key`.
 7. Paste your OpenCode API key.
-8. Add `minimax-m2.5-free` as the model name.
+8. Add `mimo-v2.5-free` as the model name.
 
 Important: do not add `/v1/messages` to the URL. Claude adds that path automatically.
 
@@ -53,9 +57,9 @@ Use these values in Claude's **Configure third-party Inference** screen:
 | Base URL | `YOUR_DEPLOYED_WORKER_URL/zen` |
 | Auth scheme | `x-api-key` |
 | API key | Your OpenCode API key |
-| Models | Add manually, for example `minimax-m2.5-free` |
+| Models | Add manually, for example `mimo-v2.5-free` |
 
-For the default example above, use `/zen` because `minimax-m2.5-free` is a Zen model. Use `/go` for OpenCode Go models instead. Do not add `/v1/messages` yourself. Claude adds the API path automatically.
+For the default example above, use `/zen` because `mimo-v2.5-free` is a Zen model. Use `/go` for OpenCode Go models instead. Do not add `/v1/messages` yourself. Claude adds the API path automatically.
 
 ## What This Does
 
@@ -73,7 +77,7 @@ For example, use `YOUR_DEPLOYED_WORKER_URL/go` for Go models and `YOUR_DEPLOYED_
 
 It also handles tool calls, streaming, and DeepSeek reasoning output so coding-agent workflows work correctly.
 
-Important: this proxy has been live-tested with `minimax-m2.7`. Other OpenCode Go models are included from the public OpenCode Go model list, but provider behavior can vary, especially around streaming usage/token accounting.
+Important: this proxy has been live-tested with `minimax-m3` and `minimax-m2.7`. Other OpenCode Go models are included from the public OpenCode Go model list, but provider behavior can vary, especially around streaming usage/token accounting.
 
 ## Important Zen Limitation
 
@@ -85,15 +89,16 @@ Known Zen model categories that should work through `/zen`:
 
 | Zen model category | Examples |
 |--------------------|----------|
-| OpenAI-compatible chat models | `qwen3.6-plus`, `qwen3.5-plus`, `minimax-m2.7`, `minimax-m2.5`, `minimax-m2.5-free`, `glm-5.1`, `glm-5`, `kimi-k2.5`, `kimi-k2.6`, `big-pickle`, `deepseek-v4-flash-free`, `ring-2.6-1t-free`, `nemotron-3-super-free` |
+| OpenAI-compatible chat models | `minimax-m3-free`, `minimax-m2.7`, `minimax-m2.5`, `mimo-v2.5-free`, `glm-5.1`, `glm-5`, `kimi-k2.5`, `kimi-k2.6`, `grok-build-0.1`, `big-pickle`, `deepseek-v4-flash`, `deepseek-v4-flash-free`, `nemotron-3-super-free` |
 
 Known Zen model categories that do not work yet through this proxy:
 
 | Zen model category | Why it does not work yet |
 |--------------------|--------------------------|
-| GPT models such as `gpt-5.5` | Zen exposes these through `/responses`, and this proxy does not yet translate Anthropic Messages to OpenAI Responses API. |
-| Claude models such as `claude-sonnet-4-6` | Zen exposes these through `/messages`; this proxy's `/zen` Claude path currently translates to OpenAI-compatible `/chat/completions`. |
-| Gemini models such as `gemini-3.1-pro` | Zen exposes these through model-specific endpoints, not the generic chat-completions path used here. |
+| GPT models such as `gpt-5.5`, `gpt-5.5-pro`, `gpt-5.4`, `gpt-5.4-pro`, `gpt-5.3-codex`, `gpt-5.2` | Zen exposes these through `/responses`, and this proxy does not yet translate Anthropic Messages to OpenAI Responses API. |
+| Claude models such as `claude-opus-4-8`, `claude-sonnet-4-6`, `claude-haiku-4-5` | Zen exposes these through `/messages`; this proxy's `/zen` Claude path currently translates to OpenAI-compatible `/chat/completions`. |
+| Qwen models such as `qwen3.7-max`, `qwen3.6-plus`, `qwen3.5-plus` | Zen exposes these through `/messages` (Anthropic-compatible), not `/chat/completions`. |
+| Gemini models such as `gemini-3.5-flash`, `gemini-3.1-pro`, `gemini-3-flash` | Zen exposes these through model-specific endpoints, not the generic chat-completions path used here. |
 
 Use `/go` for OpenCode Go. Use `/zen` only for Zen models listed as OpenAI-compatible chat models in the [OpenCode Zen endpoint docs](https://opencode.ai/docs/zen/#endpoints).
 
@@ -146,14 +151,13 @@ Common OpenCode Go model IDs:
 | Kimi K2.6 | `kimi-k2.6` | OpenAI-compatible |
 | DeepSeek V4 Pro | `deepseek-v4-pro` | OpenAI-compatible |
 | DeepSeek V4 Flash | `deepseek-v4-flash` | OpenAI-compatible |
-| MiMo-V2-Pro | `mimo-v2-pro` | OpenAI-compatible |
-| MiMo-V2-Omni | `mimo-v2-omni` | OpenAI-compatible |
 | MiMo-V2.5-Pro | `mimo-v2.5-pro` | OpenAI-compatible |
 | MiMo-V2.5 | `mimo-v2.5` | OpenAI-compatible |
+| MiniMax M3 | `minimax-m3` | Anthropic-compatible upstream |
 | MiniMax M2.7 | `minimax-m2.7` | Anthropic-compatible upstream |
 | MiniMax M2.5 | `minimax-m2.5` | Anthropic-compatible upstream |
-| Qwen3.6 Plus | `qwen3.6-plus` | OpenAI-compatible |
-| Qwen3.5 Plus | `qwen3.5-plus` | OpenAI-compatible |
+| Qwen3.7 Max | `qwen3.7-max` | Anthropic-compatible upstream |
+| Qwen3.6 Plus | `qwen3.6-plus` | Anthropic-compatible upstream |
 
 For the latest list, see the OpenCode Go endpoint docs:
 
@@ -161,7 +165,7 @@ For the latest list, see the OpenCode Go endpoint docs:
 https://opencode.ai/docs/go/#endpoints
 ```
 
-For OpenCode's own config files, model IDs use the `opencode-go/<model-id>` format. For Claude's third-party inference setup through this proxy, use the raw API model ID such as `deepseek-v4-pro`, `kimi-k2.6`, or `qwen3.5-plus`.
+For OpenCode's own config files, model IDs use the `opencode-go/<model-id>` format. For Claude's third-party inference setup through this proxy, use the raw API model ID such as `deepseek-v4-pro`, `kimi-k2.6`, or `minimax-m3`.
 
 ### `claude.json` Example
 
@@ -193,16 +197,13 @@ You can also configure Claude with a `claude.json` gateway entry. Replace the Wo
       "name": "deepseek-v4-flash"
     },
     {
-      "name": "mimo-v2-pro"
-    },
-    {
-      "name": "mimo-v2-omni"
-    },
-    {
       "name": "mimo-v2.5-pro"
     },
     {
       "name": "mimo-v2.5"
+    },
+    {
+      "name": "minimax-m3"
     },
     {
       "name": "minimax-m2.7"
@@ -211,10 +212,10 @@ You can also configure Claude with a `claude.json` gateway entry. Replace the Wo
       "name": "minimax-m2.5"
     },
     {
-      "name": "qwen3.6-plus"
+      "name": "qwen3.7-max"
     },
     {
-      "name": "qwen3.5-plus"
+      "name": "qwen3.6-plus"
     }
   ]
 }
@@ -263,11 +264,11 @@ Prefix routes:
 Claude Desktop may reject model names that don't look like Anthropic models (e.g. `claude-sonnet-4-5` or `anthropic/claude-*`). To work around this, embed the real model name in the URL path after the prefix:
 
 ```
-YOUR_DEPLOYED_WORKER_URL/zen/minimax-m2.5-free   # free Zen models
-YOUR_DEPLOYED_WORKER_URL/go/deepseek-v4-pro      # paid Go models
+YOUR_DEPLOYED_WORKER_URL/zen/mimo-v2.5-free   # free Zen models
+YOUR_DEPLOYED_WORKER_URL/go/deepseek-v4-pro   # paid Go models
 ```
 
-Claude appends `/v1/messages`, so the full request becomes `YOUR_WORKER_URL/zen/minimax-m2.5-free/v1/messages`. The proxy extracts the model from the path and uses it regardless of what Claude sends in the request body.
+Claude appends `/v1/messages`, so the full request becomes `YOUR_WORKER_URL/zen/mimo-v2.5-free/v1/messages`. The proxy extracts the model from the path and uses it regardless of what Claude sends in the request body.
 
 **Usage:**
 1. Configure Claude with any Anthropic-looking model name (e.g. `claude-sonnet-4-5-20250514`) — this passes Claude's client-side validation.
@@ -277,7 +278,7 @@ Claude appends `/v1/messages`, so the full request becomes `YOUR_WORKER_URL/zen/
 
 | Setting | Value |
 |---------|-------|
-| Base URL | `YOUR_WORKER_URL/zen/minimax-m2.5-free` |
+| Base URL | `YOUR_WORKER_URL/zen/mimo-v2.5-free` |
 | Auth scheme | `x-api-key` |
 | API key | Your OpenCode API key |
 | Model | `claude-sonnet-4-5-20250514` (any Anthropic-looking name) |
