@@ -10,14 +10,9 @@ I covered how to set this up in Claude in [How to Use Claude Code for Free with 
 
 ### Image / Vision Support
 
-When you attach an image in Claude Code and send it through this proxy, the request is automatically routed to a vision-capable model. The model is selected based on which upstream the request is sent to:
+When you attach an image in Claude Code and send it through this proxy, the request is automatically routed to **Qwen3.6 Plus** (`qwen3.6-plus`) — a vision-capable model available on both OpenCode Go and OpenCode Zen. This happens transparently: the proxy detects image blocks in your request, translates them to OpenAI's image format, and overrides the model to Qwen3.6 Plus so the model can actually see the image.
 
-| Upstream path | Vision model | Model ID |
-|---------------|--------------|----------|
-| `/go` (or no prefix, default) | MiniMax M3 | `minimax-m3` |
-| `/zen` | MiniMax M3 Free | `minimax-m3-free` |
-
-The proxy detects image blocks in your request, translates them to OpenAI's image format, and overrides the model so it can actually see the image. No configuration needed — it just works as long as you have an OpenCode Go or Zen subscription.
+No configuration needed — it just works as long as you have an OpenCode Go or Zen subscription.
 
 ## Free Models
 
@@ -89,7 +84,7 @@ Known Zen model categories that should work through `/zen`:
 
 | Zen model category | Examples |
 |--------------------|----------|
-| OpenAI-compatible chat models | `minimax-m3-free`, `minimax-m2.7`, `minimax-m2.5`, `mimo-v2.5-free`, `glm-5.1`, `glm-5`, `kimi-k2.5`, `kimi-k2.6`, `grok-build-0.1`, `big-pickle`, `deepseek-v4-flash`, `deepseek-v4-flash-free`, `nemotron-3-super-free` |
+| OpenAI-compatible chat models | `minimax-m2.7`, `minimax-m2.5`, `mimo-v2.5-free`, `glm-5.1`, `glm-5`, `kimi-k2.5`, `kimi-k2.6`, `grok-build-0.1`, `big-pickle`, `deepseek-v4-flash`, `deepseek-v4-flash-free`, `nemotron-3-super-free` |
 
 Known Zen model categories that do not work yet through this proxy:
 
