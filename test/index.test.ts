@@ -242,7 +242,7 @@ describe('worker routing', () => {
     });
 
     const response = await worker.fetch(request);
-    const body = await response.json();
+    const body: any = await response.json();
     expect(body.model).toBe('claude-sonnet-4-5-20250514');
   });
 

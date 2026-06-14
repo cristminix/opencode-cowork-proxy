@@ -101,7 +101,7 @@ async function handleRequest(request: Request): Promise<Response> {
       if (err) return authErrorResponse(err);
 
       if (fmt === "openai") {
-        const req = await request.json();
+        const req: any = await request.json();
         const originalModel = req.model;
         if (route.modelOverride) req.model = route.modelOverride;
         if (hasImages(req)) {
@@ -145,7 +145,7 @@ async function handleRequest(request: Request): Promise<Response> {
       if (err) return authErrorResponse(err);
 
       if (fmt === "anthropic") {
-        const req = await request.json();
+        const req: any = await request.json();
         const anthReq = formatOpenAIToAnthropic(req);
         const res = await fetch(`${upstream}/v1/messages`, {
           method: "POST",
@@ -183,7 +183,7 @@ async function handleRequest(request: Request): Promise<Response> {
       const res = fmt === "anthropic"
         ? await fetch(`${upstream}/v1/models`, {
             method: "GET",
-            headers: anthropicHeaders(request, key),
+            headers: anthropicHeaders(request, key!),
           })
         : await fetch(`${upstream}/models`, {
             method: "GET",
